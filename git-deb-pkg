@@ -212,13 +212,22 @@ function cmd_init_debian() {
     cd "../${src}-${ver}"
 
     DEBFULLNAME="${DEBFULLNAME}" DEBEMAIL="${DEBEMAIL}" \
-	dh_make -d -n -s -t "${templates_dir}"
-    for f in '*.ex' '*.EX' dirs docs; do
-	rm -f debian/$f
-    done
+	dh_make -d -n -s -t "${templates_dir}" ${@}
+    # Remember the resuls of 'dh_make', we need to do some cleanup before we can die.
+    local dh_make_result=$?
 
     mv "../${src}-${ver}" "../${src}"
     cd "../${src}"
+
+    # If the 'dh_make' command filed then exit.
+    if [ ${dh_make_result} -ne 0 ] ; then
+        die "/!\\ INIT DEBIAN FAILED /!\\"
+    fi
+
+    for f in '*.ex' '*.EX' dirs docs; do
+	    rm -f debian/$f
+    done
+
 
     cmd_set_defaults
 
@@ -468,7 +477,7 @@ function cmd_build() {
     cmd_prepare_orig
 
     _msg "Building ${deb_src_package} ${deb_version_full}"
-    debuild -I.git -i'\.git/'
+    debuild -I.git -i'\.git/' ${@}
 
     # Check build is OK
     sed -n 's/^ \([0-9a-f]\{64\}\) [0-9]\+ \(.\+\)$/\1  ..\/\2/p' \
